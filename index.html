@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>英文測驗生成器 - 教師後台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tesseract.js for OCR -->
+    <script src='https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .shrimp-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #5a67d8;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Menu Buttons */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 30px 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-height: 150px;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .menu-btn .icon {
+            font-size: 2.5rem;
+        }
+
+        .menu-btn.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .menu-btn.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: #f7fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #e0e7ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e0e7ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Progress */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #718096;
+        }
+
+        /* Extracted Content */
+        .extracted-content {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 15px;
+            border-left: 4px solid #48bb78;
+        }
+
+        .content-title {
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .content-text {
+            color: #4a5568;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Vocabulary Editor */
+        .vocab-editor {
+            margin-top: 20px;
+        }
+
+        .vocab-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .vocab-input {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .vocab-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .btn-add {
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+        }
+
+        /* Action Buttons */
+        .action-btns {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-btns .btn {
+            flex: 1;
+        }
+
+        /* Section */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Preview */
+        .preview-frame {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        /* Word list from OCR */
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .word-tag {
+            background: #e0e7ff;
+            color: #5a67d8;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .word-tag:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .word-tag.selected {
+            background: #48bb78;
+            color: white;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #718096;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+        }
+
+        .tab:hover {
+            background: #f7fafc;
+            color: #5a67d8;
+        }
+
+        .tab.active {
+            background: #e0e7ff;
+            color: #5a67d8;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vocab-item {
+                grid-template-columns: 1fr;
+            }
+
+            .action-btns {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="shrimp-icon">🦐</div>
+            <h1>英文測驗生成器</h1>
+            <p class="subtitle">教師後台 - 自動從文件生成題目</p>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="menu-section" class="section active">
+            <div class="card">
+                <h2 class="card-title">📚 選擇功能</h2>
+                <div class="menu-grid">
+                    <button class="menu-btn" onclick="showUploadSection()">
+                        <span class="icon">📄</span>
+                        <span>上傳文件<br>自動生成</span>
+                    </button>
+                    <button class="menu-btn secondary" onclick="showManualEdit()">
+                        <span class="icon">✏️</span>
+                        <span>手動編輯<br>生字列表</span>
+                    </button>
+                    <button class="menu-btn success" onclick="previewQuiz()">
+                        <span class="icon">👁️</span>
+                        <span>預覽測驗<br>網站</span>
+                    </button>
+                    <button class="menu-btn" onclick="downloadQuiz()">
+                        <span class="icon">💾</span>
+                        <span>下載測驗<br>檔案</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="upload-section" class="section">
+            <div class="card">
+                <h2 class="card-title">📤 上傳文件</h2>
+                <p style="margin-bottom: 20px; color: #718096;">
+                    支援 PDF、JPG、PNG 格式。系統會自動辨識文字並提取生字。
+                </p>
+
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">撳此處或拖曳檔案至此</div>
+                    <div class="upload-hint">支援 PDF、JPG、PNG</div>
+                </div>
+
+                <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
+
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%">0%</div>
+                    </div>
+                    <div class="progress-text" id="progress-text">準備中...</div>
+                </div>
+
+                <div class="extracted-content" id="extracted-content" style="display: none;">
+                    <div class="content-title">📝 辨識結果</div>
+                    <div class="content-text" id="extracted-text"></div>
+                </div>
+
+                <div id="suggested-words" style="display: none; margin-top: 20px;">
+                    <div class="content-title">🔍 建議生字（撳一下加入）</div>
+                    <div class="word-list" id="word-list"></div>
+                </div>
+
+                <div class="action-btns">
+                    <button class="btn btn-secondary" onclick="backToMenu()">返回選單</button>
+                    <button class="btn btn-primary" id="next-btn" onclick="goToEditor()" style="display: none;">編輯生字 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor Section -->
+        <div id="editor-section" class="section">
+            <div class="card">
+                <h2 class="card-title">✏️ 編輯生字</h2>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('vocab')">生字列表</button>
+                    <button class="tab" onclick="switchTab('grammar')">文法題目</button>
+                    <button class="tab" onclick="switchTab('settings')">設定</button>
+                </div>
+
+                <div id="vocab-tab" class="tab-content">
+                    <p style="margin-bottom: 15px; color: #718096;">
+                        編輯生字、音標和中文解釋。系統會自動生成測驗題目。
+                    </p>
+
+                    <div class="vocab-editor" id="vocab-list">
+                        <!-- Vocabulary items will be inserted here -->
+                    </div>
+
+                    <button class="btn btn-secondary btn-add" onclick="addNewWord()">+ 添加生字</button>
+                </div>
+
+                <div id="grammar-tab" class="tab-content" style="display: none;">
+                    <p style="margin-bottom: 15px; color: #718096;">
+                        文法題目會使用預設題庫。如需自定義，請直接編輯生成的檔案。
+                    </p>
+                    <div style="background: #fef3c7; padding: 15px; border-radius: 10px; border-left: 4px solid #f59e0b;">
+                        💡 提示：上傳的文件中的文法練習會被自動識別並加入題庫。
+                    </div>
+                </div>
+
+                <div id="settings-tab" class="tab-content" style="display: none;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">單元名稱</label>
+                        <input type="text" id="unit-name" class="vocab-input" value="自定義單元" style="width: 100%;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">題目數量</label>
+                        <input type="number" id="question-count" class="vocab-input" value="10" min="5" max="50" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="action-btns">
+                    <button class="btn btn-secondary" onclick="backToUpload()">← 返回上傳</button>
+                    <button class="btn btn-primary" onclick="generateQuiz()">✨ 生成測驗</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div id="preview-section" class="section">
+            <div class="card">
+                <h2 class="card-title">👁️ 預覽測驗</h2>
+                <p style="margin-bottom: 15px; color: #718096;">
+                    這是學生會看到的測驗界面。確認無誤後可以下載檔案。
+                </p>
+                <iframe class="preview-frame" id="preview-frame" src="about:blank"></iframe>
+                <div class="action-btns">
+                    <button class="btn btn-secondary" onclick="backToEditor()">← 返回編輯</button>
+                    <button class="btn btn-success" onclick="downloadQuiz()">💾 下載測驗檔案</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let extractedText = '';
+        let vocabulary = [];
+        let currentFile = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup drag and drop
+            const uploadArea = document.getElementById('upload-area');
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    processFile(files[0]);
+                }
+            });
+        });
+
+        // Navigation
+        function showUploadSection() {
+            document.getElementById('menu-section').classList.remove('active');
+            document.getElementById('upload-section').classList.add('active');
+        }
+
+        function showManualEdit() {
+            vocabulary = [
+                { word: '', ipa: '', type: 'n.', meaning: '' },
+                { word: '', ipa: '', type: 'v.', meaning: '' },
+                { word: '', ipa: '', type: 'adj.', meaning: '' }
+            ];
+            renderVocabEditor();
+            document.getElementById('menu-section').classList.remove('active');
+            document.getElementById('editor-section').classList.add('active');
+        }
+
+        function backToMenu() {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('menu-section').classList.add('active');
+        }
+
+        function backToUpload() {
+            document.getElementById('editor-section').classList.remove('active');
+            document.getElementById('upload-section').classList.add('active');
+        }
+
+        function backToEditor() {
+            document.getElementById('preview-section').classList.remove('active');
+            document.getElementById('editor-section').classList.add('active');
+        }
+
+        function goToEditor() {
+            document.getElementById('upload-section').classList.remove('active');
+            document.getElementById('editor-section').classList.add('active');
+            renderVocabEditor();
+        }
+
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        async function processFile(file) {
+            currentFile = file;
+            document.getElementById('progress-container').classList.add('active');
+            document.getElementById('next-btn').style.display = 'none';
+
+            try {
+                if (file.type.startsWith('image/')) {
+                    await processImage(file);
+                } else if (file.type === 'application/pdf') {
+                    await processPDF(file);
+                } else {
+                    alert('不支援的檔案格式');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error processing file:', error);
+                alert('處理檔案時出錯：' + error.message);
+            }
+        }
+
+        async function processImage(file) {
+            updateProgress(10, '正在載入圖片...');
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                updateProgress(30, '正在辨識文字 (OCR)...');
+
+                try {
+                    const result = await Tesseract.recognize(
+                        e.target.result,
+                        'eng',
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    updateProgress(30 + Math.round(m.progress * 60), '正在辨識文字...');
+                                }
+                            }
+                        }
+                    );
+
+                    extractedText = result.data.text;
+                    updateProgress(100, '完成！');
+
+                    displayExtractedContent();
+                    suggestWords(extractedText);
+
+                    document.getElementById('next-btn').style.display = 'block';
+                } catch (error) {
+                    alert('OCR 辨識失敗：' + error.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function processPDF(file) {
+            updateProgress(20, '正在處理 PDF...');
+            alert('PDF 處理需要額外庫。請暫時使用圖片格式 (JPG/PNG)，或將 PDF 截圖後上傳。');
+            updateProgress(0, '準備中...');
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-fill').textContent = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function displayExtractedContent() {
+            document.getElementById('extracted-content').style.display = 'block';
+            document.getElementById('extracted-text').textContent = extractedText;
+        }
+
+        function suggestWords(text) {
+            // Simple word extraction - look for words that might be vocabulary
+            const words = text.match(/\b[a-zA-Z]{4,15}\b/g) || [];
+            const wordFreq = {};
+
+            words.forEach(w => {
+                const word = w.toLowerCase();
+                if (!commonWords.includes(word)) {
+                    wordFreq[word] = (wordFreq[word] || 0) + 1;
+                }
+            });
+
+            // Sort by frequency and take top 20
+            const sortedWords = Object.entries(wordFreq)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20)
+                .map(([word]) => word);
+
+            const wordList = document.getElementById('word-list');
+            wordList.innerHTML = '';
+
+            sortedWords.forEach(word => {
+                const tag = document.createElement('span');
+                tag.className = 'word-tag';
+                tag.textContent = word;
+                tag.onclick = () => {
+                    tag.classList.toggle('selected');
+                    updateVocabularyFromSelection();
+                };
+                wordList.appendChild(tag);
+            });
+
+            document.getElementById('suggested-words').style.display = 'block';
+        }
+
+        function updateVocabularyFromSelection() {
+            const selected = document.querySelectorAll('.word-tag.selected');
+            vocabulary = Array.from(selected).map(tag => ({
+                word: tag.textContent,
+                ipa: '',
+                type: 'n.',
+                meaning: ''
+            }));
+        }
+
+        function renderVocabEditor() {
+            const container = document.getElementById('vocab-list');
+            container.innerHTML = '';
+
+            vocabulary.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'vocab-item';
+                row.innerHTML = `
+                    <input type="text" class="vocab-input" placeholder="生字" value="${item.word}" onchange="updateWord(${index}, 'word', this.value)">
+                    <input type="text" class="vocab-input" placeholder="音標" value="${item.ipa}" onchange="updateWord(${index}, 'ipa', this.value)">
+                    <input type="text" class="vocab-input" placeholder="中文" value="${item.meaning}" onchange="updateWord(${index}, 'meaning', this.value)">
+                    <button class="btn btn-danger" onclick="removeWord(${index})">🗑️</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function updateWord(index, field, value) {
+            vocabulary[index][field] = value;
+        }
+
+        function removeWord(index) {
+            vocabulary.splice(index, 1);
+            renderVocabEditor();
+        }
+
+        function addNewWord() {
+            vocabulary.push({ word: '', ipa: '', type: 'n.', meaning: '' });
+            renderVocabEditor();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').style.display = 'block';
+        }
+
+        function generateQuiz() {
+            // Filter out empty words
+            const validVocab = vocabulary.filter(v => v.word && v.meaning);
+
+            if (validVocab.length === 0) {
+                alert('請至少添加一個完整的生字（生字 + 中文）');
+                return;
+            }
+
+            // Generate quiz data
+            const quizData = {
+                units: [{
+                    id: 'custom',
+                    name: document.getElementById('unit-name').value || '自定義單元',
+                    vocabulary: validVocab
+                }],
+                fill_in_blanks: generateFillInBlanks(validVocab),
+                grammar: {
+                    tenses: [],
+                    articles: [],
+                    relative_pronouns: []
+                }
+            };
+
+            // Store for download
+            window.generatedQuizData = quizData;
+
+            // Show preview
+            document.getElementById('editor-section').classList.remove('active');
+            document.getElementById('preview-section').classList.add('active');
+
+            // Create preview
+            const previewHtml = generateQuizHtml(quizData);
+            const blob = new Blob([previewHtml], { type: 'text/html' });
+            document.getElementById('preview-frame').src = URL.createObjectURL(blob);
+        }
+
+        function generateFillInBlanks(vocab) {
+            const templates = [
+                "The _____ is very important.",
+                "Please help me _____ this.",
+                "I like this _____ very much.",
+                "We need to buy a new _____.",
+                "The _____ looks very nice."
+            ];
+
+            return vocab.slice(0, 10).map((v, i) => ({
+                sentence: templates[i % templates.length].replace('_____', '______'),
+                answer: v.word,
+                chinese: `這個_____${v.meaning}。`
+            }));
+        }
+
+        function generateQuizHtml(quizData) {
+            // Simplified version - embed the quiz data and use the same logic
+            return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文測驗</title>
+    <style>
+        /* Same styles as main quiz */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        .header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 25px 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .option-btn {
+            background: white;
+            border: 3px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px 25px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .option-btn.correct { border-color: #48bb78; background: #c6f6d5; }
+        .option-btn.wrong { border-color: #f56565; background: #fed7d7; }
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+        .section { display: none; }
+        .section.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 英文測驗</h1>
+            <p>${quizData.units[0].name}</p>
+        </div>
+
+        <div id="menu" class="section active">
+            <div class="card">
+                <button class="menu-btn" onclick="startQuiz()">開始測驗</button>
+                <button class="menu-btn" onclick="showVocab()">溫習生字</button>
+            </div>
+        </div>
+
+        <div id="quiz" class="section">
+            <div class="card">
+                <div id="question"></div>
+                <button class="btn" onclick="nextQuestion()" id="next-btn">下一題</button>
+            </div>
+        </div>
+
+        <div id="result" class="section">
+            <div class="card">
+                <h2>測驗完成！</h2>
+                <p>得分: <span id="score">0</span></p>
+                <button class="btn" onclick="location.reload()">重新開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = ${JSON.stringify(quizData)};
+        let currentQ = 0;
+        let score = 0;
+        let questions = [];
+
+        function startQuiz() {
+            // Generate questions from vocab
+            const vocab = quizData.units[0].vocabulary;
+            questions = vocab.map(v => ({
+                q: v.meaning + ' 的英文是？',
+                options: [v.word, 'apple', 'book', 'cat'], // Simplified
+                answer: 0
+            }));
+
+            document.getElementById('menu').classList.remove('active');
+            document.getElementById('quiz').classList.add('active');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentQ];
+            document.getElementById('question').innerHTML = `
+                <h3>題目 ${currentQ + 1}/${questions.length}</h3>
+                <p style="font-size: 1.3rem; margin: 20px 0;">${q.q}</p>
+                ${q.options.map((opt, i) => `
+                    <button class="option-btn" onclick="checkAnswer(${i})">${opt}</button>
+                `).join('')}
+            `;
+        }
+
+        function checkAnswer(ans) {
+            const q = questions[currentQ];
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons[q.answer].classList.add('correct');
+            if (ans !== q.answer) {
+                buttons[ans].classList.add('wrong');
+            } else {
+                score += 10;
+            }
+        }
+
+        function nextQuestion() {
+            currentQ++;
+            if (currentQ < questions.length) {
+                showQuestion();
+            } else {
+                document.getElementById('quiz').classList.remove('active');
+                document.getElementById('result').classList.add('active');
+                document.getElementById('score').textContent = score;
+            }
+        }
+
+        function showVocab() {
+            const vocab = quizData.units[0].vocabulary;
+            document.getElementById('menu').classList.remove('active');
+            document.getElementById('quiz').classList.add('active');
+            document.getElementById('question').innerHTML = `
+                <h3>生字列表</h3>
+                ${vocab.map(v => `<p><strong>${v.word}</strong> ${v.ipa} - ${v.meaning}</p>`).join('')}
+                <button class="btn" onclick="location.reload()">返回</button>
+            `;
+        }
+    </script>
+</body>
+</html>`;
+        }
+
+        function previewQuiz() {
+            if (!window.generatedQuizData) {
+                alert('請先生成測驗');
+                return;
+            }
+            document.getElementById('menu-section').classList.remove('active');
+            document.getElementById('preview-section').classList.add('active');
+        }
+
+        function downloadQuiz() {
+            if (!window.generatedQuizData) {
+                alert('請先生成測驗');
+                return;
+            }
+
+            const html = generateQuizHtml(window.generatedQuizData);
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'english-quiz.html';
+            a.click();
+        }
+
+        // Common English words to exclude
+        const commonWords = [
+            'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
+            'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+            'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her',
+            'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there',
+            'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get',
+            'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no',
+            'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your',
+            'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then',
+            'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
+            'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first',
+            'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these',
+            'give', 'day', 'most', 'us', 'is', 'are', 'was', 'were', 'been',
+            'has', 'had', 'did', 'does', 'doing', 'done'
+        ];
+    </script>
+</body>
+</html>
