@@ -931,7 +931,7 @@ function generateQuizHtml(quizData) {
     html += '            if (ans !== q.answer) {\n';
     html += '                buttons[ans].classList.add("wrong");\n';
     html += '                fb.style.background = "#fed7d7"; fb.style.color = "#742a2a";\n';
-    html += '                fb.innerHTML = "❌ 錯誤！正確答案是: <strong>" + q.options[q.answer] + "</strong>";\n';
+    html += '                fb.innerHTML = "❌ 錯誤！";\n';
     html += '            } else {\n';
     html += '                score += 10;\n';
     html += '                fb.style.background = "#c6f6d5"; fb.style.color = "#22543d";\n';
