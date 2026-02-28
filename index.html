@@ -425,7 +425,7 @@
                     支援 PDF、JPG、PNG 格式。系統會自動辨識文字並提取生字。
                 </p>
 
-                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="upload-area" id="upload-area" onclick="console.log('Upload area clicked'); document.getElementById('file-input').click()">
                     <div class="upload-icon">📁</div>
                     <div class="upload-text">撳此處或拖曳檔案至此</div>
                     <div class="upload-hint">支援 PDF、JPG、PNG</div>
@@ -531,26 +531,38 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin dashboard loaded');
+            
             // Setup drag and drop
             const uploadArea = document.getElementById('upload-area');
+            if (!uploadArea) {
+                console.error('Upload area not found');
+                return;
+            }
 
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 uploadArea.classList.add('dragover');
             });
 
-            uploadArea.addEventListener('dragleave', () => {
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 uploadArea.classList.remove('dragover');
             });
 
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 uploadArea.classList.remove('dragover');
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     processFile(files[0]);
                 }
             });
+            
+            console.log('Event listeners attached');
         });
 
         // Navigation
@@ -600,6 +612,7 @@
         }
 
         async function processFile(file) {
+            console.log('Processing file:', file.name, 'Type:', file.type);
             currentFile = file;
             document.getElementById('progress-container').classList.add('active');
             document.getElementById('next-btn').style.display = 'none';
@@ -608,10 +621,11 @@
                 if (file.type.startsWith('image/')) {
                     await processImage(file);
                 } else if (file.type === 'application/pdf') {
-                    await processPDF(file);
+                    updateProgress(20, '正在處理 PDF...');
+                    alert('PDF 處理需要額外庫。請暫時使用圖片格式 (JPG/PNG)，或將 PDF 截圖後上傳。');
+                    updateProgress(0, '準備中...');
                 } else {
-                    alert('不支援的檔案格式');
-                    return;
+                    alert('不支援的檔案格式：' + file.type + '\n請使用 JPG、PNG 或 PDF');
                 }
             } catch (error) {
                 console.error('Error processing file:', error);
@@ -620,6 +634,7 @@
         }
 
         async function processImage(file) {
+            console.log('Processing image:', file.name, file.type);
             updateProgress(10, '正在載入圖片...');
 
             const reader = new FileReader();
@@ -627,11 +642,13 @@
                 updateProgress(30, '正在辨識文字 (OCR)...');
 
                 try {
+                    console.log('Starting Tesseract OCR...');
                     const result = await Tesseract.recognize(
                         e.target.result,
                         'eng',
                         {
                             logger: m => {
+                                console.log('Tesseract:', m);
                                 if (m.status === 'recognizing text') {
                                     updateProgress(30 + Math.round(m.progress * 60), '正在辨識文字...');
                                 }
@@ -640,6 +657,7 @@
                     );
 
                     extractedText = result.data.text;
+                    console.log('OCR complete, text length:', extractedText.length);
                     updateProgress(100, '完成！');
 
                     displayExtractedContent();
@@ -647,9 +665,17 @@
 
                     document.getElementById('next-btn').style.display = 'block';
                 } catch (error) {
+                    console.error('OCR Error:', error);
                     alert('OCR 辨識失敗：' + error.message);
+                    updateProgress(0, '出錯');
                 }
             };
+            
+            reader.onerror = function(e) {
+                console.error('FileReader error:', e);
+                alert('讀取檔案失敗');
+            };
+            
             reader.readAsDataURL(file);
         }
 
@@ -666,8 +692,17 @@
         }
 
         function displayExtractedContent() {
-            document.getElementById('extracted-content').style.display = 'block';
-            document.getElementById('extracted-text').textContent = extractedText;
+            const contentDiv = document.getElementById('extracted-content');
+            const textDiv = document.getElementById('extracted-text');
+            
+            if (!contentDiv || !textDiv) {
+                console.error('Content display elements not found');
+                return;
+            }
+            
+            contentDiv.style.display = 'block';
+            textDiv.textContent = extractedText || '(無提取到文字)';
+            console.log('Extracted text length:', extractedText ? extractedText.length : 0);
         }
 
         function suggestWords(text) {
