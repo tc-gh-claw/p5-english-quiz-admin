@@ -842,192 +842,129 @@
             }));
         }
 
-        function generateQuizHtml(quizData) {
-            // Simplified version - embed the quiz data and use the same logic
-            return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文測驗</title>
-    <style>
-        /* Same styles as main quiz */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
-        }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            padding: 20px;
-        }
-        .header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; }
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        }
-        .menu-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            padding: 25px 20px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .option-btn {
-            background: white;
-            border: 3px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 20px 25px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 10px;
-            text-align: left;
-        }
-        .option-btn.correct { border-color: #48bb78; background: #c6f6d5; }
-        .option-btn.wrong { border-color: #f56565; background: #fed7d7; }
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            width: 100%;
-        }
-        .section { display: none; }
-        .section.active { display: block; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📝 英文測驗</h1>
-            <p>${quizData.units[0].name}</p>
-        </div>
-
-        <div id="menu" class="section active">
-            <div class="card">
-                <button class="menu-btn" onclick="startQuiz()">開始測驗</button>
-                <button class="menu-btn" onclick="showVocab()">溫習生字</button>
-            </div>
-        </div>
-
-        <div id="quiz" class="section">
-            <div class="card">
-                <div id="question"></div>
-                <button class="btn" onclick="nextQuestion()" id="next-btn">下一題</button>
-            </div>
-        </div>
-
-        <div id="result" class="section">
-            <div class="card">
-                <h2>測驗完成！</h2>
-                <p>得分: <span id="score">0</span></p>
-                <button class="btn" onclick="location.reload()">重新開始</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const quizData = ${JSON.stringify(quizData)};
-        let currentQ = 0;
-        let score = 0;
-        let questions = [];
-
-        function startQuiz() {
-            // Generate questions from vocab
-            const vocab = quizData.units[0].vocabulary;
-            questions = vocab.map(v => ({
-                q: v.meaning + ' 的英文是？',
-                options: [v.word, 'apple', 'book', 'cat'], // Simplified
-                answer: 0
-            }));
-
-            document.getElementById('menu').classList.remove('active');
-            document.getElementById('quiz').classList.add('active');
-            showQuestion();
-        }
-
-        function showQuestion() {
-            const q = questions[currentQ];
-            document.getElementById('question').innerHTML = `
-                <h3>題目 ${currentQ + 1}/${questions.length}</h3>
-                <p style="font-size: 1.3rem; margin: 20px 0;">${q.q}</p>
-                ${q.options.map((opt, i) => `
-                    <button class="option-btn" onclick="checkAnswer(${i})">${opt}</button>
-                `).join('')}
-            `;
-        }
-
-        function checkAnswer(ans) {
-            const q = questions[currentQ];
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons[q.answer].classList.add('correct');
-            if (ans !== q.answer) {
-                buttons[ans].classList.add('wrong');
-            } else {
-                score += 10;
-            }
-        }
-
-        function nextQuestion() {
-            currentQ++;
-            if (currentQ < questions.length) {
-                showQuestion();
-            } else {
-                document.getElementById('quiz').classList.remove('active');
-                document.getElementById('result').classList.add('active');
-                document.getElementById('score').textContent = score;
-            }
-        }
-
-        function showVocab() {
-            const vocab = quizData.units[0].vocabulary;
-            document.getElementById('menu').classList.remove('active');
-            document.getElementById('quiz').classList.add('active');
-            document.getElementById('question').innerHTML = `
-                <h3>生字列表</h3>
-                ${vocab.map(v => `<p><strong>${v.word}</strong> ${v.ipa} - ${v.meaning}</p>`).join('')}
-                <button class="btn" onclick="location.reload()">返回</button>
-            `;
-        }
-    </script>
-</body>
-</html>`;
-        }
-
-        function previewQuiz() {
-            if (!window.generatedQuizData) {
-                alert('請先生成測驗');
-                return;
-            }
-            document.getElementById('menu-section').classList.remove('active');
-            document.getElementById('preview-section').classList.add('active');
-        }
-
-        function downloadQuiz() {
-            if (!window.generatedQuizData) {
-                alert('請先生成測驗');
-                return;
-            }
+// generateQuizHtml function - simplified safe version
+function generateQuizHtml(quizData) {
+    const unitName = quizData.units[0].name || '英文測驗';
+    const vocab = quizData.units[0].vocabulary;
+    const vocabJson = JSON.stringify(vocab);
+    
+    var html = '<!DOCTYPE html>\n';
+    html += '<html lang="zh-HK">\n';
+    html += '<head>\n';
+    html += '    <meta charset="UTF-8">\n';
+    html += '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+    html += '    <title>英文測驗 - ' + unitName + '</title>\n';
+    html += '    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">\n';
+    html += '    <script src="https://code.responsivevoice.org/responsivevoice.js"><\/script>\n';
+    html += '    <style>\n';
+    html += '        * { margin: 0; padding: 0; box-sizing: border-box; }\n';
+    html += '        body { font-family: "Nunito", sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }\n';
+    html += '        .container { max-width: 800px; margin: 0 auto; }\n';
+    html += '        .header { text-align: center; color: white; margin-bottom: 30px; padding: 20px; }\n';
+    html += '        .header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; }\n';
+    html += '        .card { background: white; border-radius: 20px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }\n';
+    html += '        .menu-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 15px; padding: 25px 20px; font-size: 1.2rem; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 15px; }\n';
+    html += '        .option-btn { background: white; border: 3px solid #e2e8f0; border-radius: 15px; padding: 20px 25px; font-size: 1.2rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px; text-align: left; }\n';
+    html += '        .option-btn.correct { border-color: #48bb78; background: #c6f6d5; }\n';
+    html += '        .option-btn.wrong { border-color: #f56565; background: #fed7d7; }\n';
+    html += '        .btn { padding: 15px 30px; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 100%; }\n';
+    html += '        .section { display: none; }\n';
+    html += '        .section.active { display: block; }\n';
+    html += '        .ipa { color: #667eea; font-size: 0.9rem; }\n';
+    html += '        .vocab-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #e2e8f0; align-items: center; }\n';
+    html += '        .pronounce-btn { background: #e0e7ff; color: #5a67d8; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }\n';
+    html += '    </style>\n';
+    html += '</head>\n';
+    html += '<body>\n';
+    html += '    <div class="container">\n';
+    html += '        <div class="header"><h1>📝 ' + unitName + '</h1><p>由教師後台生成</p></div>\n';
+    html += '        <div id="menu" class="section active">\n';
+    html += '            <div class="card">\n';
+    html += '                <button class="menu-btn" onclick="startQuiz()">開始測驗</button>\n';
+    html += '                <button class="menu-btn" onclick="showVocab()">溫習生字 + 讀音</button>\n';
+    html += '            </div>\n';
+    html += '        </div>\n';
+    html += '        <div id="quiz" class="section">\n';
+    html += '            <div class="card"><div id="question"></div><button class="btn" onclick="nextQuestion()" id="next-btn">下一題</button></div>\n';
+    html += '        </div>\n';
+    html += '        <div id="result" class="section">\n';
+    html += '            <div class="card"><h2>測驗完成！</h2><p style="font-size:1.5rem;margin:20px 0">得分: <span id="score">0</span></p><button class="btn" onclick="location.reload()">重新開始</button></div>\n';
+    html += '        </div>\n';
+    html += '    </div>\n';
+    html += '    <script>\n';
+    html += '        var vocab = ' + vocabJson + ';\n';
+    html += '        var currentQ = 0, score = 0, questions = [];\n';
+    html += '        function startQuiz() {\n';
+    html += '            questions = [];\n';
+    html += '            for (var i = 0; i < vocab.length; i++) {\n';
+    html += '                var options = [vocab[i].word];\n';
+    html += '                var others = vocab.filter(function(w) { return w.word !== vocab[i].word; });\n';
+    html += '                for (var j = 0; j < 3 && j < others.length; j++) options.push(others[j].word);\n';
+    html += '                for (var k = options.length - 1; k > 0; k--) {\n';
+    html += '                    var r = Math.floor(Math.random() * (k + 1));\n';
+    html += '                    var tmp = options[k]; options[k] = options[r]; options[r] = tmp;\n';
+    html += '                }\n';
+    html += '                questions.push({ q: vocab[i].meaning + " 的英文是？", options: options, answer: options.indexOf(vocab[i].word), ipa: vocab[i].ipa || "" });\n';
+    html += '            }\n';
+    html += '            document.getElementById("menu").classList.remove("active");\n';
+    html += '            document.getElementById("quiz").classList.add("active");\n';
+    html += '            showQuestion();\n';
+    html += '        }\n';
+    html += '        function showQuestion() {\n';
+    html += '            var q = questions[currentQ];\n';
+    html += '            var html = "<h3>題目 " + (currentQ + 1) + "/" + questions.length + "</h3>";\n';
+    html += '            html += "<p style=\\'font-size:1.4rem;margin:20px 0;font-weight:700\\'>" + q.q + "</p>";\n';
+    html += '            if (q.ipa) html += "<p class=\\'ipa\\'>音標: " + q.ipa + "</p>";\n';
+    html += '            html += "<div style=\\'margin-top:20px\\'>";\n';
+    html += '            for (var i = 0; i < q.options.length; i++) {\n';
+    html += '                html += "<button class=\\'option-btn\\' onclick=\\'checkAnswer(" + i + ")\\'>" + q.options[i] + "</button>";\n';
+    html += '            }\n';
+    html += '            html += "</div><div id=\\'feedback\\' style=\\'margin-top:15px;padding:15px;border-radius:10px;display:none\\'></div>";\n';
+    html += '            document.getElementById("question").innerHTML = html;\n';
+    html += '        }\n';
+    html += '        function checkAnswer(ans) {\n';
+    html += '            var q = questions[currentQ];\n';
+    html += '            var buttons = document.querySelectorAll(".option-btn");\n';
+    html += '            buttons[q.answer].classList.add("correct");\n';
+    html += '            var fb = document.getElementById("feedback");\n';
+    html += '            fb.style.display = "block";\n';
+    html += '            if (ans !== q.answer) {\n';
+    html += '                buttons[ans].classList.add("wrong");\n';
+    html += '                fb.style.background = "#fed7d7"; fb.style.color = "#742a2a";\n';
+    html += '                fb.innerHTML = "❌ 錯誤！正確答案是: <strong>" + q.options[q.answer] + "</strong>";\n';
+    html += '            } else {\n';
+    html += '                score += 10;\n';
+    html += '                fb.style.background = "#c6f6d5"; fb.style.color = "#22543d";\n';
+    html += '                fb.innerHTML = "✅ 正確！";\n';
+    html += '                if (typeof responsiveVoice !== "undefined") responsiveVoice.speak(q.options[q.answer], "UK English Female", {rate: 0.9});\n';
+    html += '            }\n';
+    html += '            for (var i = 0; i < buttons.length; i++) buttons[i].onclick = null;\n';
+    html += '        }\n';
+    html += '        function nextQuestion() {\n';
+    html += '            currentQ++;\n';
+    html += '            if (currentQ < questions.length) showQuestion();\n';
+    html += '            else { document.getElementById("quiz").classList.remove("active"); document.getElementById("result").classList.add("active"); document.getElementById("score").textContent = score; }\n';
+    html += '        }\n';
+    html += '        function showVocab() {\n';
+    html += '            var html = "<h3>📖 溫習生字</h3><div style=\\'margin-top:20px\\'>";\n';
+    html += '            for (var i = 0; i < vocab.length; i++) {\n';
+    html += '                html += "<div class=\\'vocab-item\\'><div><strong style=\\'font-size:1.2rem\\'>" + vocab[i].word + "</strong>";\n';
+    html += '                if (vocab[i].ipa) html += " <span class=\\'ipa\\'>" + vocab[i].ipa + "</span>";\n';
+    html += '                html += "<br><span style=\\'color:#718096\\'>" + vocab[i].meaning + "</span></div>";\n';
+    html += '                html += "<button class=\\'pronounce-btn\\' onclick=\\'speak(\\\\'" + vocab[i].word + "\\\\')\\'>🔊 讀音</button></div>";\n';
+    html += '            }\n';
+    html += '            html += "</div><button class=\\'btn\\' style=\\'margin-top:20px\\' onclick=\\'location.reload()\\'>返回</button>";\n';
+    html += '            document.getElementById("question").innerHTML = html;\n';
+    html += '            document.getElementById("next-btn").style.display = "none";\n';
+    html += '            document.getElementById("menu").classList.remove("active");\n';
+    html += '            document.getElementById("quiz").classList.add("active");\n';
+    html += '        }\n';
+    html += '        function speak(word) { if (typeof responsiveVoice !== "undefined") responsiveVoice.speak(word, "UK English Female", {rate: 0.9}); else if (\'speechSynthesis\' in window) { var u = new SpeechSynthesisUtterance(word); u.lang = \'en-GB\'; u.rate = 0.8; speechSynthesis.speak(u); } }\n';
+    html += '    <\/script>\n';
+    html += '</body>\n';
+    html += '</html>';
+    return html;
+}            }
 
             const html = generateQuizHtml(window.generatedQuizData);
             const blob = new Blob([html], { type: 'text/html' });
